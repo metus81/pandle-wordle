@@ -45,12 +45,12 @@ export function Keyboard({ keyStates, onKey, disabled }: KeyboardProps) {
                 onClick={() => onKey(key)}
                 aria-label={key}
                 className={cn(
-                  "relative z-20 flex h-11 min-w-0 touch-manipulation select-none items-center justify-center rounded-md text-xs font-semibold uppercase transition-colors [-webkit-tap-highlight-color:transparent] disabled:opacity-60 sm:h-14 sm:text-sm",
-                  isAction ? "flex-[1.5] px-1 text-xs" : "flex-1",
+                  "relative z-20 flex h-12 min-w-0 touch-manipulation select-none items-center justify-center rounded-md text-base font-bold uppercase transition-colors [-webkit-tap-highlight-color:transparent] disabled:opacity-60 sm:h-16 sm:text-lg",
+                  isAction ? "flex-[1.5] px-1 text-sm sm:text-base" : "flex-1",
                   isAction ? stateClasses.empty : stateClasses[state],
                 )}
               >
-                {key === "backspace" ? <Delete className="h-5 w-5" /> : key === "enter" ? "Enter" : key}
+                {key === "backspace" ? <Delete className="h-6 w-6" /> : key === "enter" ? "Enter" : key}
               </button>
             )
           })}

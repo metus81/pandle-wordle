@@ -11,6 +11,8 @@ import {
   type LetterState,
   MAX_GUESSES,
   mergeKeyStates,
+  TILE_FLIP_DURATION_MS,
+  TILE_FLIP_STAGGER_MS,
   WORD_LENGTH,
 } from "@/lib/game";
 import { getDailyAnswer, getRandomAnswer, VALID_GUESSES } from "@/lib/words";
@@ -35,8 +37,11 @@ async function fetchWordDefinition(word: string) {
   }
 }
 
-function getDailyDateKey() {
-  return new Date().toISOString().slice(0, 10);
+function getDailyDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function WordleGame() {
@@ -134,6 +139,9 @@ export function WordleGame() {
     setKeyStates((k) => mergeKeyStates(k, current, evaluation));
     setCurrent("");
 
+    const revealMs =
+      (WORD_LENGTH - 1) * TILE_FLIP_STAGGER_MS + TILE_FLIP_DURATION_MS + 80;
+
     if (current === answer) {
       // Wait for the tile flip animation before showing the modal.
       if (resultTimer.current) clearTimeout(resultTimer.current);
@@ -143,11 +151,18 @@ export function WordleGame() {
           setStatus("won");
           setResultOpen(true);
         },
-        WORD_LENGTH * 90 + 420,
+        revealMs,
       );
     } else if (rowIndex + 1 >= MAX_GUESSES) {
-      setStatus("lost");
-      setResultOpen(true);
+      if (resultTimer.current) clearTimeout(resultTimer.current);
+      resultTimer.current = setTimeout(
+        () => {
+          resultTimer.current = null;
+          setStatus("lost");
+          setResultOpen(true);
+        },
+        revealMs,
+      );
       flash(`The word was ${answer.toUpperCase()}`);
     }
   }, [current, answer, guesses.length, flash]);
@@ -238,8 +253,8 @@ export function WordleGame() {
             You did it!
           </h2>
           <p className="mt-3 text-pretty text-muted-foreground">
-            Happy belated birthday Kaitlan! Your word is solved for today. Come
-            back tomorrow for another cozy challenge with Panda.
+            Your word is solved for today. Come back tomorrow for another cozy
+            challenge with Panda.
           </p>
         </main>
       ) : (

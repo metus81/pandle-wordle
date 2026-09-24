@@ -1,6 +1,6 @@
 "use client"
 
-import { type LetterState, MAX_GUESSES, WORD_LENGTH } from "@/lib/game"
+import { type LetterState, MAX_GUESSES, TILE_FLIP_STAGGER_MS, WORD_LENGTH } from "@/lib/game"
 import { cn } from "@/lib/utils"
 
 type BoardProps = {
@@ -49,7 +49,7 @@ export function GameBoard({ guesses, evaluations, current, shakeRow }: BoardProp
                     submitted && "panda-flip",
                     filled && "panda-pop border-foreground/50",
                   )}
-                  style={submitted ? { animationDelay: `${colIndex * 90}ms` } : undefined}
+                  style={submitted ? { animationDelay: `${colIndex * TILE_FLIP_STAGGER_MS}ms` } : undefined}
                 >
                   {letter}
                 </div>

@@ -2,6 +2,8 @@ export type LetterState = "correct" | "present" | "absent" | "empty"
 
 export const WORD_LENGTH = 5
 export const MAX_GUESSES = 6
+export const TILE_FLIP_STAGGER_MS = 200
+export const TILE_FLIP_DURATION_MS = 800
 
 // Evaluate a guess against the answer, correctly handling duplicate letters.
 export function evaluateGuess(guess: string, answer: string): LetterState[] {
