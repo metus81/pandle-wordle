@@ -87,7 +87,8 @@ const fiveLetterWords = (words: string[]) =>
   words.map(normalize).filter((word) => word.length === 5);
 
 // Common English words are used as the answer pool.
-export const ANSWERS = [...new Set(fiveLetterWords(english10))];
+// export const ANSWERS = [...new Set(fiveLetterWords(english10))];
+export const ANSWERS = [...new Set(lists.flatMap(fiveLetterWords))];
 
 // Every five-letter word from every packaged *-words-*.json file is a valid guess.
 export const VALID_GUESSES = new Set(lists.flatMap(fiveLetterWords));
