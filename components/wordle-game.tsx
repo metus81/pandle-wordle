@@ -21,28 +21,6 @@ type Status = "playing" | "won" | "lost";
 
 const DAILY_COMPLETE_KEY = "pandle-daily-complete";
 
-// async function fetchWordDefinition(word: string) {
-//   const normalizedWord = word.trim().toLowerCase();
-//   if (!normalizedWord) return null;
-//   console.log({ normalizedWord });
-
-//   try {
-//     // const response = await fetch(
-//     //   `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(normalizedWord)}`,
-//     // );
-//     const response = await fetch(
-//       `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`,
-//     );
-//     console.log({ response });
-//     console.log("getting response");
-//     if (!response.ok) return null;
-//     const data = await response.json();
-//     return data[0]?.meanings?.[0]?.definitions?.[0]?.definition ?? null;
-//   } catch {
-//     return null;
-//   }
-// }
-
 function getDailyDateKey(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -70,35 +48,21 @@ export function WordleGame() {
     const normalizedWord = word.trim().toLowerCase();
 
     if (!normalizedWord) {
-      console.log("[Dictionary] No word provided");
       setDefinition(null);
       return;
     }
-
-    console.log(`[Dictionary] Looking up "${normalizedWord}"`);
-
     try {
       const response = await fetch(
         `/api/dictionary/${encodeURIComponent(normalizedWord)}`,
       );
-
-      console.log(
-        `[Dictionary] Response: ${response.status} ${response.statusText}`,
-      );
-
       if (!response.ok) {
-        console.log(`[Dictionary] No definition found for "${normalizedWord}"`);
         setDefinition(null);
         return;
       }
 
       const data = await response.json();
-
-      console.log("[Dictionary] Result:", data);
-
       setDefinition(data.definition ?? null);
     } catch (error) {
-      console.error("[Dictionary] Fetch failed:", error);
       setDefinition(null);
     }
   }
