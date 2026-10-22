@@ -289,9 +289,15 @@ export function WordleGame() {
         <main className="mt-12 flex w-full max-w-md flex-col items-center rounded-3xl border border-border bg-card/80 px-6 py-10 text-center shadow-lg">
           {dailyOutcome === "lost" ? (
             <>
-              <div className="panda-bounce" aria-hidden="true">
-                <PandaFace size={96} className="grayscale opacity-80" />
-              </div>
+<div className="panda-bounce relative text-7xl" role="img" aria-label="Sad panda crying">
+              <span aria-hidden="true">🐼</span>
+              <span className="absolute left-1/2 top-1/2 -translate-x-5 translate-y-2 text-2xl" aria-hidden="true">
+                💧
+              </span>
+              <span className="absolute left-1/2 top-1/2 translate-x-2 translate-y-2 text-2xl" aria-hidden="true">
+                💧
+              </span>
+            </div>
               <h2 className="mt-5 text-2xl font-extrabold text-foreground">
                 Almost there!
               </h2>
