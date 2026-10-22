@@ -12,6 +12,7 @@ type WinModalProps = {
   definition: string | null;
   guessCount: number;
   onPlayAgain: () => void;
+  onViewResults: () => void;
   onDismiss?: () => void;
 };
 
@@ -29,6 +30,7 @@ export function WinModal({
   definition,
   guessCount,
   onPlayAgain,
+  onViewResults,
   onDismiss,
 }: WinModalProps) {
   const playAgainRef = useRef<HTMLButtonElement>(null);
@@ -120,23 +122,38 @@ export function WinModal({
           )}
 
           {won ? (
-            <Button
-              ref={playAgainRef}
-              onClick={onDismiss ?? onPlayAgain}
-              size="lg"
-              className="mt-2 w-full bg-panda-correct text-panda-correct-foreground hover:brightness-95"
-            >
-              Okay
-            </Button>
+            <>
+              <Button
+                ref={playAgainRef}
+                onClick={onDismiss ?? onPlayAgain}
+                size="lg"
+                className="mt-2 w-full bg-panda-correct text-panda-correct-foreground hover:brightness-95"
+              >
+                Okay
+              </Button>
+              <Button
+                onClick={onViewResults}
+                variant="outline"
+                size="lg"
+                className="w-full"
+              >
+                View results
+              </Button>
+            </>
           ) : (
-            <Button
-              ref={playAgainRef}
-              onClick={onPlayAgain}
-              size="lg"
-              className="mt-2 w-full bg-panda-absent text-panda-absent-foreground hover:brightness-95"
-            >
-              Try again
-            </Button>
+            <>
+              <Button
+                ref={playAgainRef}
+                onClick={onPlayAgain}
+                size="lg"
+                className="mt-2 w-full bg-panda-absent text-panda-absent-foreground hover:brightness-95"
+              >
+                Try again
+              </Button>
+              <Button onClick={onViewResults} variant="outline" size="lg" className="w-full">
+                View results
+              </Button>
+            </>
           )}
         </div>
 

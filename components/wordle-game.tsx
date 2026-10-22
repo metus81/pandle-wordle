@@ -108,6 +108,16 @@ export function WordleGame() {
     messageTimer.current = setTimeout(() => setMessage(""), 1600);
   }, []);
 
+  const returnToMainMenu = useCallback(() => {
+    try {
+      window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
+    } catch {
+      // The completed state still lasts for this session when storage is unavailable.
+    }
+    setResultOpen(false);
+    setDailyComplete(true);
+  }, []);
+
   const reset = useCallback(() => {
     if (resultTimer.current) {
       clearTimeout(resultTimer.current);
@@ -285,6 +295,27 @@ export function WordleGame() {
               disabled={status !== "playing"}
             />
           </div>
+
+          {status !== "playing" && !resultOpen && (
+            <div className="flex w-full flex-col gap-2 sm:flex-row">
+              {status === "lost" && (
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="min-h-11 flex-1 rounded-lg bg-panda-absent px-4 py-2 text-sm font-semibold text-panda-absent-foreground transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Try again
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={returnToMainMenu}
+                className="min-h-11 flex-1 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Main menu
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -295,15 +326,8 @@ export function WordleGame() {
         definition={definition}
         guessCount={guesses.length}
         onPlayAgain={reset}
-        onDismiss={() => {
-          try {
-            window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
-          } catch {
-            // The completed state still lasts for this session when storage is unavailable.
-          }
-          setResultOpen(false);
-          setDailyComplete(true);
-        }}
+        onViewResults={() => setResultOpen(false)}
+        onDismiss={returnToMainMenu}
       />
 
       {helpOpen && (
