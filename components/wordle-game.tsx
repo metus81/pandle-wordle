@@ -297,20 +297,11 @@ export function WordleGame() {
           </div>
 
           {status !== "playing" && !resultOpen && (
-            <div className="flex w-full flex-col gap-2 sm:flex-row">
-              {status === "lost" && (
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="min-h-11 flex-1 rounded-lg bg-panda-absent px-4 py-2 text-sm font-semibold text-panda-absent-foreground transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Try again
-                </button>
-              )}
+            <div className="flex justify-center">
               <button
                 type="button"
                 onClick={returnToMainMenu}
-                className="min-h-11 flex-1 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Main menu
               </button>
