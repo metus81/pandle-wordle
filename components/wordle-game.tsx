@@ -20,6 +20,7 @@ import { getDailyAnswer, getRandomAnswer, VALID_GUESSES } from "@/lib/words";
 type Status = "playing" | "won" | "lost";
 
 const DAILY_COMPLETE_KEY = "pandle-daily-complete";
+const DAILY_OUTCOME_KEY = "pandle-daily-outcome";
 const WIN_STREAK_KEY = "pandle-win-streak";
 
 function getDailyDateKey(date = new Date()) {
@@ -39,6 +40,7 @@ export function WordleGame() {
   const [status, setStatus] = useState<Status>("playing");
   const [resultOpen, setResultOpen] = useState(false);
   const [dailyComplete, setDailyComplete] = useState<boolean | null>(null);
+  const [dailyOutcome, setDailyOutcome] = useState<"won" | "lost" | null>(null);
   const [winStreak, setWinStreak] = useState(0);
   const [message, setMessage] = useState("");
   const [shakeRow, setShakeRow] = useState<number | null>(null);
@@ -93,8 +95,10 @@ export function WordleGame() {
       setWinStreak(Number.isFinite(storedStreak) && storedStreak > 0 ? storedStreak : 0);
 
       if (window.localStorage.getItem(DAILY_COMPLETE_KEY) === today) {
+        const outcome = window.localStorage.getItem(DAILY_OUTCOME_KEY) === "lost" ? "lost" : "won";
+        setDailyOutcome(outcome);
         setDailyComplete(true);
-        setStatus("won");
+        setStatus(outcome);
         return () => {
           cancelled = true;
         };
@@ -119,6 +123,7 @@ export function WordleGame() {
   const returnToMainMenu = useCallback(() => {
     try {
       window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
+      window.localStorage.setItem(DAILY_OUTCOME_KEY, status === "lost" ? "lost" : "won");
     } catch {
       // The completed state still lasts for this session when storage is unavailable.
     }
@@ -181,6 +186,7 @@ export function WordleGame() {
           }
           return nextStreak;
         });
+        setDailyOutcome("won");
         setStatus("won");
         setResultOpen(true);
       }, revealMs);
@@ -194,6 +200,7 @@ export function WordleGame() {
         } catch {
           // The reset still lasts for this session when storage is unavailable.
         }
+        setDailyOutcome("lost");
         setStatus("lost");
         setResultOpen(true);
       }, revealMs);
@@ -280,17 +287,33 @@ export function WordleGame() {
 
       {dailyComplete === null ? null : dailyComplete ? (
         <main className="mt-12 flex w-full max-w-md flex-col items-center rounded-3xl border border-border bg-card/80 px-6 py-10 text-center shadow-lg">
-          <div className="panda-bounce text-7xl" aria-hidden="true">
-            🐼
-          </div>
-          <h2 className="mt-5 text-2xl font-extrabold text-foreground">
-            You did it!
-          </h2>
-          <p className="mt-3 text-pretty text-muted-foreground">
-            Your word is solved for today. Come back tomorrow for another cozy
-            challenge with Panda.
-          </p>
-          {winStreak > 0 && (
+          {dailyOutcome === "lost" ? (
+            <>
+              <div className="panda-bounce" aria-hidden="true">
+                <PandaFace size={96} className="grayscale opacity-80" />
+              </div>
+              <h2 className="mt-5 text-2xl font-extrabold text-foreground">
+                Almost there!
+              </h2>
+              <p className="mt-3 text-pretty text-muted-foreground">
+                We didn&apos;t solve today&apos;s word, but there&apos;s always tomorrow. Come back and give it another try!
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="panda-bounce text-7xl" aria-hidden="true">
+                🐼
+              </div>
+              <h2 className="mt-5 text-2xl font-extrabold text-foreground">
+                You did it!
+              </h2>
+              <p className="mt-3 text-pretty text-muted-foreground">
+                Your word is solved for today. Come back tomorrow for another cozy
+                challenge with Panda.
+              </p>
+            </>
+          )}
+          {dailyOutcome !== "lost" && winStreak >= 3 && (
             <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-orange-950 shadow-sm dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-100">
               <p className="text-lg font-extrabold leading-tight">
                 <span aria-hidden="true">🔥</span> {winStreak}-day streak
