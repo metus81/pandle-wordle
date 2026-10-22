@@ -20,6 +20,7 @@ import { getDailyAnswer, getRandomAnswer, VALID_GUESSES } from "@/lib/words";
 type Status = "playing" | "won" | "lost";
 
 const DAILY_COMPLETE_KEY = "pandle-daily-complete";
+const WIN_STREAK_KEY = "pandle-win-streak";
 
 function getDailyDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -38,6 +39,7 @@ export function WordleGame() {
   const [status, setStatus] = useState<Status>("playing");
   const [resultOpen, setResultOpen] = useState(false);
   const [dailyComplete, setDailyComplete] = useState<boolean | null>(null);
+  const [winStreak, setWinStreak] = useState(0);
   const [message, setMessage] = useState("");
   const [shakeRow, setShakeRow] = useState<number | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -84,6 +86,12 @@ export function WordleGame() {
     const today = getDailyDateKey();
 
     try {
+      const storedStreak = Number.parseInt(
+        window.localStorage.getItem(WIN_STREAK_KEY) ?? "0",
+        10,
+      );
+      setWinStreak(Number.isFinite(storedStreak) && storedStreak > 0 ? storedStreak : 0);
+
       if (window.localStorage.getItem(DAILY_COMPLETE_KEY) === today) {
         setDailyComplete(true);
         setStatus("won");
@@ -164,6 +172,15 @@ export function WordleGame() {
       if (resultTimer.current) clearTimeout(resultTimer.current);
       resultTimer.current = setTimeout(() => {
         resultTimer.current = null;
+        setWinStreak((currentStreak) => {
+          const nextStreak = currentStreak + 1;
+          try {
+            window.localStorage.setItem(WIN_STREAK_KEY, String(nextStreak));
+          } catch {
+            // The streak still lasts for this session when storage is unavailable.
+          }
+          return nextStreak;
+        });
         setStatus("won");
         setResultOpen(true);
       }, revealMs);
@@ -171,6 +188,12 @@ export function WordleGame() {
       if (resultTimer.current) clearTimeout(resultTimer.current);
       resultTimer.current = setTimeout(() => {
         resultTimer.current = null;
+        setWinStreak(0);
+        try {
+          window.localStorage.setItem(WIN_STREAK_KEY, "0");
+        } catch {
+          // The reset still lasts for this session when storage is unavailable.
+        }
         setStatus("lost");
         setResultOpen(true);
       }, revealMs);
@@ -267,6 +290,16 @@ export function WordleGame() {
             Your word is solved for today. Come back tomorrow for another cozy
             challenge with Panda.
           </p>
+          {winStreak > 0 && (
+            <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-orange-950 shadow-sm dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-100">
+              <p className="text-lg font-extrabold leading-tight">
+                <span aria-hidden="true">🔥</span> {winStreak}-day streak
+              </p>
+              <p className="mt-2 text-sm leading-tight text-orange-800 dark:text-orange-200">
+                You&apos;re on fire! Keep it going tomorrow.
+              </p>
+            </div>
+          )}
         </main>
       ) : (
         <div className="relative mt-5 flex w-full max-w-md flex-col items-center gap-5 sm:mt-6 sm:gap-6">
