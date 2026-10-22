@@ -112,7 +112,10 @@ export function WordleGame() {
       }
 
       if (lastCompletedDay === today) {
-        const outcome = window.localStorage.getItem(DAILY_OUTCOME_KEY) === "lost" ? "lost" : "won";
+        const outcome =
+          window.localStorage.getItem(DAILY_OUTCOME_KEY) === "lost"
+            ? "lost"
+            : "won";
         setDailyOutcome(outcome);
         setDailyComplete(true);
         setStatus(outcome);
@@ -137,13 +140,20 @@ export function WordleGame() {
     messageTimer.current = setTimeout(() => setMessage(""), 1600);
   }, []);
 
+  const persistDailyResult = useCallback(
+    (outcome: "won" | "lost", nextStreak: number) => {
+      try {
+        window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
+        window.localStorage.setItem(DAILY_OUTCOME_KEY, outcome);
+        window.localStorage.setItem(WIN_STREAK_KEY, String(nextStreak));
+      } catch {
+        // The completed state still lasts for this session when storage is unavailable.
+      }
+    },
+    [],
+  );
+
   const returnToMainMenu = useCallback(() => {
-    try {
-      window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
-      window.localStorage.setItem(DAILY_OUTCOME_KEY, status === "lost" ? "lost" : "won");
-    } catch {
-      // The completed state still lasts for this session when storage is unavailable.
-    }
     setResultOpen(false);
     setDailyComplete(true);
   }, []);
@@ -190,44 +200,36 @@ export function WordleGame() {
       (WORD_LENGTH - 1) * TILE_FLIP_STAGGER_MS + TILE_FLIP_DURATION_MS + 80;
 
     if (current === answer) {
-      // Wait for the tile flip animation before showing the modal.
+      // Save immediately so reloading during the flip animation can't replay the day.
+      const nextStreak = winStreak + 1;
+      persistDailyResult("won", nextStreak);
       if (resultTimer.current) clearTimeout(resultTimer.current);
       resultTimer.current = setTimeout(() => {
         resultTimer.current = null;
-        setWinStreak((currentStreak) => {
-          const nextStreak = currentStreak + 1;
-          try {
-            window.localStorage.setItem(WIN_STREAK_KEY, String(nextStreak));
-          } catch {
-            // The streak still lasts for this session when storage is unavailable.
-          }
-          return nextStreak;
-        });
+        setWinStreak(nextStreak);
         setDailyOutcome("won");
         setStatus("won");
         setResultOpen(true);
       }, revealMs);
     } else if (rowIndex + 1 >= MAX_GUESSES) {
+      persistDailyResult("lost", 0);
       if (resultTimer.current) clearTimeout(resultTimer.current);
       resultTimer.current = setTimeout(() => {
         resultTimer.current = null;
         setWinStreak(0);
-        try {
-          window.localStorage.setItem(WIN_STREAK_KEY, "0");
-        } catch {
-          // The reset still lasts for this session when storage is unavailable.
-        }
         setDailyOutcome("lost");
         setStatus("lost");
         setResultOpen(true);
       }, revealMs);
       flash(`The word was ${answer.toUpperCase()}`);
     }
-  }, [current, answer, guesses.length, flash]);
+  }, [current, answer, guesses.length, flash, winStreak, persistDailyResult]);
+
+  const isRoundOver = guesses.length >= MAX_GUESSES || guesses.includes(answer);
 
   const handleKey = useCallback(
     (key: string) => {
-      if (status !== "playing" || !answer) return;
+      if (status !== "playing" || !answer || helpOpen || isRoundOver) return;
       const k = key.toLowerCase();
       if (k === "enter") {
         submit();
@@ -237,7 +239,7 @@ export function WordleGame() {
         setCurrent((c) => c + k);
       }
     },
-    [status, answer, current.length, submit],
+    [status, answer, helpOpen, isRoundOver, current.length, submit],
   );
 
   useEffect(() => {
@@ -306,20 +308,31 @@ export function WordleGame() {
         <main className="mt-12 flex w-full max-w-md flex-col items-center rounded-3xl border border-border bg-card/80 px-6 py-10 text-center shadow-lg">
           {dailyOutcome === "lost" ? (
             <>
-<div className="panda-bounce relative text-7xl" role="img" aria-label="Sad panda crying">
-              <span aria-hidden="true">🐼</span>
-              <span className="absolute left-1/2 top-1/2 -translate-x-4 translate-y-2 text-base leading-none opacity-90" aria-hidden="true">
-                💧
-              </span>
-              <span className="absolute left-1/2 top-1/2 translate-x-1 translate-y-2 text-base leading-none opacity-90" aria-hidden="true">
-                💧
-              </span>
-            </div>
+              <div
+                className="panda-bounce relative text-7xl"
+                role="img"
+                aria-label="Sad panda crying"
+              >
+                <span aria-hidden="true">🐼</span>
+                <span
+                  className="absolute left-1/2 top-1/2 -translate-x-4 translate-y-2 text-base leading-none opacity-90"
+                  aria-hidden="true"
+                >
+                  💧
+                </span>
+                <span
+                  className="absolute left-1/2 top-1/2 translate-x-1 translate-y-2 text-base leading-none opacity-90"
+                  aria-hidden="true"
+                >
+                  💧
+                </span>
+              </div>
               <h2 className="mt-5 text-2xl font-extrabold text-foreground">
                 Almost there!
               </h2>
               <p className="mt-3 text-pretty text-muted-foreground">
-                We didn&apos;t solve today&apos;s word, but there&apos;s always tomorrow. Come back and give it another try!
+                We didn&apos;t solve today&apos;s word, but there&apos;s always
+                tomorrow. Come back and give it another try!
               </p>
             </>
           ) : (
@@ -331,8 +344,8 @@ export function WordleGame() {
                 You did it!
               </h2>
               <p className="mt-3 text-pretty text-muted-foreground">
-                Your word is solved for today. Come back tomorrow for another cozy
-                challenge with Panda.
+                Your word is solved for today. Come back tomorrow for another
+                cozy challenge with Panda.
               </p>
             </>
           )}
@@ -364,6 +377,9 @@ export function WordleGame() {
               evaluations={evaluations}
               current={current}
               shakeRow={shakeRow}
+              revealedAnswer={
+                status === "lost" && !resultOpen ? answer : undefined
+              }
             />
           </div>
 
