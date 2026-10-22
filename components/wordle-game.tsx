@@ -108,6 +108,16 @@ export function WordleGame() {
     messageTimer.current = setTimeout(() => setMessage(""), 1600);
   }, []);
 
+  const returnToMainMenu = useCallback(() => {
+    try {
+      window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
+    } catch {
+      // The completed state still lasts for this session when storage is unavailable.
+    }
+    setResultOpen(false);
+    setDailyComplete(true);
+  }, []);
+
   const reset = useCallback(() => {
     if (resultTimer.current) {
       clearTimeout(resultTimer.current);
@@ -285,6 +295,18 @@ export function WordleGame() {
               disabled={status !== "playing"}
             />
           </div>
+
+          {status !== "playing" && !resultOpen && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={returnToMainMenu}
+                className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Main menu
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -295,15 +317,8 @@ export function WordleGame() {
         definition={definition}
         guessCount={guesses.length}
         onPlayAgain={reset}
-        onDismiss={() => {
-          try {
-            window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
-          } catch {
-            // The completed state still lasts for this session when storage is unavailable.
-          }
-          setResultOpen(false);
-          setDailyComplete(true);
-        }}
+        onViewResults={() => setResultOpen(false)}
+        onDismiss={returnToMainMenu}
       />
 
       {helpOpen && (
