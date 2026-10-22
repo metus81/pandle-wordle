@@ -30,6 +30,12 @@ function getDailyDateKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function getCalendarDayDifference(olderDateKey: string, newerDateKey: string) {
+  const olderDate = new Date(`${olderDateKey}T00:00:00`);
+  const newerDate = new Date(`${newerDateKey}T00:00:00`);
+  return Math.round((newerDate.getTime() - olderDate.getTime()) / 86_400_000);
+}
+
 export function WordleGame() {
   const [answer, setAnswer] = useState<string>("");
   const [definition, setDefinition] = useState<string | null>(null);
@@ -92,9 +98,20 @@ export function WordleGame() {
         window.localStorage.getItem(WIN_STREAK_KEY) ?? "0",
         10,
       );
-      setWinStreak(Number.isFinite(storedStreak) && storedStreak > 0 ? storedStreak : 0);
+      const lastCompletedDay = window.localStorage.getItem(DAILY_COMPLETE_KEY);
+      const hasValidStreak =
+        Number.isFinite(storedStreak) &&
+        storedStreak > 0 &&
+        !!lastCompletedDay &&
+        getCalendarDayDifference(lastCompletedDay, today) <= 1;
+      const nextStreak = hasValidStreak ? storedStreak : 0;
+      setWinStreak(nextStreak);
 
-      if (window.localStorage.getItem(DAILY_COMPLETE_KEY) === today) {
+      if (!hasValidStreak && storedStreak > 0) {
+        window.localStorage.setItem(WIN_STREAK_KEY, "0");
+      }
+
+      if (lastCompletedDay === today) {
         const outcome = window.localStorage.getItem(DAILY_OUTCOME_KEY) === "lost" ? "lost" : "won";
         setDailyOutcome(outcome);
         setDailyComplete(true);
@@ -291,10 +308,10 @@ export function WordleGame() {
             <>
 <div className="panda-bounce relative text-7xl" role="img" aria-label="Sad panda crying">
               <span aria-hidden="true">🐼</span>
-              <span className="absolute left-1/2 top-1/2 -translate-x-5 translate-y-2 text-2xl" aria-hidden="true">
+              <span className="absolute left-1/2 top-1/2 -translate-x-4 translate-y-2 text-base leading-none opacity-90" aria-hidden="true">
                 💧
               </span>
-              <span className="absolute left-1/2 top-1/2 translate-x-2 translate-y-2 text-2xl" aria-hidden="true">
+              <span className="absolute left-1/2 top-1/2 translate-x-1 translate-y-2 text-base leading-none opacity-90" aria-hidden="true">
                 💧
               </span>
             </div>
