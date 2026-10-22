@@ -20,12 +20,20 @@ import { getDailyAnswer, getRandomAnswer, VALID_GUESSES } from "@/lib/words";
 type Status = "playing" | "won" | "lost";
 
 const DAILY_COMPLETE_KEY = "pandle-daily-complete";
+const DAILY_OUTCOME_KEY = "pandle-daily-outcome";
+const WIN_STREAK_KEY = "pandle-win-streak";
 
 function getDailyDateKey(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getCalendarDayDifference(olderDateKey: string, newerDateKey: string) {
+  const olderDate = new Date(`${olderDateKey}T00:00:00`);
+  const newerDate = new Date(`${newerDateKey}T00:00:00`);
+  return Math.round((newerDate.getTime() - olderDate.getTime()) / 86_400_000);
 }
 
 export function WordleGame() {
@@ -38,6 +46,8 @@ export function WordleGame() {
   const [status, setStatus] = useState<Status>("playing");
   const [resultOpen, setResultOpen] = useState(false);
   const [dailyComplete, setDailyComplete] = useState<boolean | null>(null);
+  const [dailyOutcome, setDailyOutcome] = useState<"won" | "lost" | null>(null);
+  const [winStreak, setWinStreak] = useState(0);
   const [message, setMessage] = useState("");
   const [shakeRow, setShakeRow] = useState<number | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -84,9 +94,28 @@ export function WordleGame() {
     const today = getDailyDateKey();
 
     try {
-      if (window.localStorage.getItem(DAILY_COMPLETE_KEY) === today) {
+      const storedStreak = Number.parseInt(
+        window.localStorage.getItem(WIN_STREAK_KEY) ?? "0",
+        10,
+      );
+      const lastCompletedDay = window.localStorage.getItem(DAILY_COMPLETE_KEY);
+      const hasValidStreak =
+        Number.isFinite(storedStreak) &&
+        storedStreak > 0 &&
+        !!lastCompletedDay &&
+        getCalendarDayDifference(lastCompletedDay, today) <= 1;
+      const nextStreak = hasValidStreak ? storedStreak : 0;
+      setWinStreak(nextStreak);
+
+      if (!hasValidStreak && storedStreak > 0) {
+        window.localStorage.setItem(WIN_STREAK_KEY, "0");
+      }
+
+      if (lastCompletedDay === today) {
+        const outcome = window.localStorage.getItem(DAILY_OUTCOME_KEY) === "lost" ? "lost" : "won";
+        setDailyOutcome(outcome);
         setDailyComplete(true);
-        setStatus("won");
+        setStatus(outcome);
         return () => {
           cancelled = true;
         };
@@ -111,6 +140,7 @@ export function WordleGame() {
   const returnToMainMenu = useCallback(() => {
     try {
       window.localStorage.setItem(DAILY_COMPLETE_KEY, getDailyDateKey());
+      window.localStorage.setItem(DAILY_OUTCOME_KEY, status === "lost" ? "lost" : "won");
     } catch {
       // The completed state still lasts for this session when storage is unavailable.
     }
@@ -164,6 +194,16 @@ export function WordleGame() {
       if (resultTimer.current) clearTimeout(resultTimer.current);
       resultTimer.current = setTimeout(() => {
         resultTimer.current = null;
+        setWinStreak((currentStreak) => {
+          const nextStreak = currentStreak + 1;
+          try {
+            window.localStorage.setItem(WIN_STREAK_KEY, String(nextStreak));
+          } catch {
+            // The streak still lasts for this session when storage is unavailable.
+          }
+          return nextStreak;
+        });
+        setDailyOutcome("won");
         setStatus("won");
         setResultOpen(true);
       }, revealMs);
@@ -171,6 +211,13 @@ export function WordleGame() {
       if (resultTimer.current) clearTimeout(resultTimer.current);
       resultTimer.current = setTimeout(() => {
         resultTimer.current = null;
+        setWinStreak(0);
+        try {
+          window.localStorage.setItem(WIN_STREAK_KEY, "0");
+        } catch {
+          // The reset still lasts for this session when storage is unavailable.
+        }
+        setDailyOutcome("lost");
         setStatus("lost");
         setResultOpen(true);
       }, revealMs);
@@ -257,16 +304,48 @@ export function WordleGame() {
 
       {dailyComplete === null ? null : dailyComplete ? (
         <main className="mt-12 flex w-full max-w-md flex-col items-center rounded-3xl border border-border bg-card/80 px-6 py-10 text-center shadow-lg">
-          <div className="panda-bounce text-7xl" aria-hidden="true">
-            🐼
-          </div>
-          <h2 className="mt-5 text-2xl font-extrabold text-foreground">
-            You did it!
-          </h2>
-          <p className="mt-3 text-pretty text-muted-foreground">
-            Your word is solved for today. Come back tomorrow for another cozy
-            challenge with Panda.
-          </p>
+          {dailyOutcome === "lost" ? (
+            <>
+<div className="panda-bounce relative text-7xl" role="img" aria-label="Sad panda crying">
+              <span aria-hidden="true">🐼</span>
+              <span className="absolute left-1/2 top-1/2 -translate-x-4 translate-y-2 text-base leading-none opacity-90" aria-hidden="true">
+                💧
+              </span>
+              <span className="absolute left-1/2 top-1/2 translate-x-1 translate-y-2 text-base leading-none opacity-90" aria-hidden="true">
+                💧
+              </span>
+            </div>
+              <h2 className="mt-5 text-2xl font-extrabold text-foreground">
+                Almost there!
+              </h2>
+              <p className="mt-3 text-pretty text-muted-foreground">
+                We didn&apos;t solve today&apos;s word, but there&apos;s always tomorrow. Come back and give it another try!
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="panda-bounce text-7xl" aria-hidden="true">
+                🐼
+              </div>
+              <h2 className="mt-5 text-2xl font-extrabold text-foreground">
+                You did it!
+              </h2>
+              <p className="mt-3 text-pretty text-muted-foreground">
+                Your word is solved for today. Come back tomorrow for another cozy
+                challenge with Panda.
+              </p>
+            </>
+          )}
+          {dailyOutcome !== "lost" && winStreak >= 3 && (
+            <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-orange-950 shadow-sm dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-100">
+              <p className="text-lg font-extrabold leading-tight">
+                <span aria-hidden="true">🔥</span> {winStreak}-day streak
+              </p>
+              <p className="mt-2 text-sm leading-tight text-orange-800 dark:text-orange-200">
+                You&apos;re on fire! Keep it going tomorrow.
+              </p>
+            </div>
+          )}
         </main>
       ) : (
         <div className="relative mt-5 flex w-full max-w-md flex-col items-center gap-5 sm:mt-6 sm:gap-6">

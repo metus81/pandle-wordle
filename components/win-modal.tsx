@@ -129,7 +129,7 @@ export function WinModal({
                 size="lg"
                 className="mt-2 w-full bg-panda-correct text-panda-correct-foreground hover:brightness-95"
               >
-                Okay
+                Main menu
               </Button>
               <Button
                 onClick={onViewResults}
@@ -144,11 +144,11 @@ export function WinModal({
             <>
               <Button
                 ref={playAgainRef}
-                onClick={onPlayAgain}
+                onClick={onDismiss ?? onPlayAgain}
                 size="lg"
                 className="mt-2 w-full bg-panda-absent text-panda-absent-foreground hover:brightness-95"
               >
-                Try again
+                Main menu
               </Button>
               <Button onClick={onViewResults} variant="outline" size="lg" className="w-full">
                 View results
